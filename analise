@@ -1,0 +1,69 @@
+# telecom_churn_analysis.py
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Configurações de visualização
+sns.set(style="whitegrid")
+plt.rcParams["figure.figsize"] = (12, 6)
+
+# 1. Carga de dados
+df = pd.read_csv("data/telecom_churn.csv")
+
+# 2. Pré-visualização
+print("Amostra dos dados:")
+print(df.head())
+print("\nInformações gerais:")
+print(df.info())
+
+# 3. Limpeza de dados
+# Remover duplicatas
+df.drop_duplicates(inplace=True)
+
+# Verificar valores ausentes
+print("\nValores ausentes por coluna:")
+print(df.isnull().sum())
+
+# Corrigir colunas numéricas
+df['Charges.Monthly'] = pd.to_numeric(df['Charges.Monthly'], errors='coerce')
+df['Charges.Total'] = pd.to_numeric(df['Charges.Total'], errors='coerce')
+
+# Tratar valores ausentes
+df['Charges.Monthly'].fillna(df['Charges.Monthly'].median(), inplace=True)
+df['Charges.Total'].fillna(df['Charges.Total'].median(), inplace=True)
+
+# 4. Engenharia de Atributos
+df['Contas_Diarias'] = df['Charges.Monthly'] / 30
+
+# 5. Padronização de valores binários
+bin_map = {'Yes': 1, 'No': 0, 'Sim': 1, 'Não': 0, 'Female': 0, 'Male': 1}
+for col in ['Churn', 'Partner', 'Dependents', 'PhoneService', 'PaperlessBilling']:
+    df[col] = df[col].map(bin_map)
+
+# 6. Estatísticas descritivas
+print("\nEstatísticas descritivas:")
+print(df.describe())
+
+# 7. Visualizações
+# Distribuição do churn
+sns.countplot(data=df, x='Churn')
+plt.title("Distribuição de Churn")
+plt.savefig("results/churn_distribution.png")
+plt.clf()
+
+# Distribuição por tipo de contrato
+sns.countplot(data=df, x='Contract', hue='Churn')
+plt.title("Churn por Tipo de Contrato")
+plt.savefig("results/churn_por_contrato.png")
+plt.clf()
+
+# Relação entre tenure e Charges.Monthly
+sns.scatterplot(data=df, x='tenure', y='Charges.Monthly', hue='Churn')
+plt.title("Tenure vs. Fatura Mensal")
+plt.savefig("results/tenure_vs_charges.png")
+plt.clf()
+
+# Salvar dataset limpo
+df.to_csv("data/telecom_churn_clean.csv", index=False)
+print("\nAnálise e limpeza concluídas. Resultados salvos na pasta 'results/'.")
